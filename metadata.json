@@ -1,0 +1,5 @@
+{
+  "name": "MHT-CET Cutoff Extractor",
+  "description": "Extract structured JSON data from MHT-CET engineering college cutoff PDFs or text.",
+  "requestFramePermissions": []
+}
