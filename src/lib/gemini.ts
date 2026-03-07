@@ -32,6 +32,10 @@ Required JSON Schema:
         "is_tech": "boolean",
         "is_electronic": "boolean",
         "is_other": "boolean",
+        "isCivil": "boolean",
+        "isMechanical": "boolean",
+        "isElectrical": "boolean",
+        "isMinority": "boolean",
         "cutoff_data": {
           "Home_University_Seats_Allotted_to_Home_University_Candidates": [
             {
