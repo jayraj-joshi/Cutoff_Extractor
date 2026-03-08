@@ -15,7 +15,10 @@ Extraction Rules:
 - Do not fabricate or infer missing values.
 - Cover entire pdf and dont loose any data strictly. 
 - In minority status write a Single word like ‘Muslim’,’Christan’,’Hindi’ etc
-
+- is_tech: Set to true ONLY for Computer, IT, AI, Data Science, and Software branches.
+- Core Flags: Set isCivil, isMechanical, isElectrical, or is_electronic to true only if the name explicitly matches.
+- is_other: Set to true for all other engineering branches (e.g., Chemical, Textile, Production, Metallurgy).
+- Mutual Exclusivity: Exactly one boolean flag must be true. All others must be false.
 Required JSON Schema:
 [
   {
