@@ -1,6 +1,53 @@
 import { GoogleGenAI } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+// --- Fallback Configuration ---
+// Models to cycle through sequentially on 429/503 errors.
+const FALLBACK_MODELS = [
+  "gemini-2.5-flash-lite",
+  "gemini-2.5-flash",
+  "gemini-3.1-flash-lite-preview",
+  "gemini-3-flash-preview",
+];
+
+// API keys to cycle through sequentially. Empty/undefined keys are filtered out.
+const API_KEYS = [
+  process.env.GEMINI_API_KEY1,
+  process.env.GEMINI_API_KEY2,
+  process.env.GEMINI_API_KEY3,
+  process.env.GEMINI_API_KEY4,
+].filter((key): key is string => !!key && key.trim().length > 0);
+
+/**
+ * Checks whether an error is a retryable 429 (rate limit) or 503 (model overload).
+ * The @google/genai SDK may throw errors with a status code property,
+ * or include the status code in the error message string.
+ */
+function isRetryableError(error: unknown): boolean {
+  if (error instanceof Error) {
+    const message = error.message || "";
+    // Check for HTTP status codes in the error message
+    if (message.includes("429") || message.includes("503")) {
+      return true;
+    }
+    // Check for common rate-limit / overload phrases
+    if (
+      message.toLowerCase().includes("rate limit") ||
+      message.toLowerCase().includes("resource exhausted") ||
+      message.toLowerCase().includes("overloaded") ||
+      message.toLowerCase().includes("model is overloaded")
+    ) {
+      return true;
+    }
+  }
+  // Check for a status or statusCode property on the error object
+  if (typeof error === "object" && error !== null) {
+    const status = (error as any).status ?? (error as any).statusCode;
+    if (status === 429 || status === 503) {
+      return true;
+    }
+  }
+  return false;
+}
 
 const SYSTEM_INSTRUCTION = `You are an expert data extraction API.
 Extract all tabular cutoff data from the provided MHT-CET engineering college cutoff document and convert it strictly into the structured JSON format defined below.
@@ -14,11 +61,13 @@ Extraction Rules:
 - Preserve numerical precision exactly as shown in the document.
 - Do not fabricate or infer missing values.
 - Cover entire pdf and dont loose any data strictly. 
-- In minority status write a Single word like ‘Muslim’,’Christan’,’Hindi’ etc
+- In minority status write a Single word like 'Muslim','Christan','Hindi' etc
 - is_tech: Set to true ONLY for Computer, IT, AI, Data Science, and Software branches.
 - Core Flags: Set isCivil, isMechanical, isElectrical, or is_electronic to true only if the name explicitly matches.
 - is_other: Set to true for all other engineering branches (e.g., Chemical, Textile, Production, Metallurgy).
 - Mutual Exclusivity: Exactly one boolean flag must be true. All others must be false.
+- isMinority: Set at the college level. True if the college has minority status, otherwise false.
+
 Required JSON Schema:
 [
   {
@@ -28,17 +77,17 @@ Required JSON Schema:
     "city": "string",
     "status": "string",
     "minority_status": "string",
+    "isMinority": "boolean",
     "branches": [
       {
         "branch_code": "string",
         "branch_name": "string",
-        "is_tech": "boolean",
-        "is_electronic": "boolean",
-        "is_other": "boolean",
+        "isTech": "boolean",
+        "isElectronic": "boolean",
+        "isOther": "boolean",
         "isCivil": "boolean",
         "isMechanical": "boolean",
         "isElectrical": "boolean",
-        "isMinority": "boolean",
         "cutoff_data": {
           "Home_University_Seats_Allotted_to_Home_University_Candidates": [
             {
@@ -57,9 +106,19 @@ Required JSON Schema:
   }
 ]`;
 
+/**
+ * Extracts MHT-CET cutoff data using Gemini with automatic fallback.
+ *
+ * Fallback logic:
+ *   1. Start with API_KEY[0] and try each model in FALLBACK_MODELS sequentially.
+ *   2. If a 429/503 error occurs, move to the next model.
+ *   3. If all models fail for the current key, switch to the next API key.
+ *   4. If all keys and models are exhausted, throw the last encountered error.
+ *   5. Non-retryable errors (e.g., 400 bad request) are thrown immediately.
+ */
 export async function extractData(input: { text?: string; pdfBase64?: string }) {
   const parts: any[] = [];
-  
+
   if (input.pdfBase64) {
     parts.push({
       inlineData: {
@@ -68,7 +127,7 @@ export async function extractData(input: { text?: string; pdfBase64?: string }) 
       },
     });
   }
-  
+
   if (input.text) {
     parts.push({ text: input.text });
   }
@@ -77,19 +136,79 @@ export async function extractData(input: { text?: string; pdfBase64?: string }) 
     throw new Error("No input provided. Please provide either text or a PDF file.");
   }
 
-  const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash-lite",
-    contents: { parts },
-    config: {
-      systemInstruction: SYSTEM_INSTRUCTION,
-      responseMimeType: "application/json",
-      temperature: 0.1,
-    },
-  });
-
-  if (!response.text) {
-    throw new Error("The model failed to generate a text response.");
+  // Guard: ensure at least one API key is configured
+  if (API_KEYS.length === 0) {
+    throw new Error("No Gemini API keys configured. Please set at least GEMINI_API_KEY1 in your .env file.");
   }
 
-  return response.text;
+  let lastError: unknown = null;
+
+  // --- Outer loop: cycle through API keys ---
+  for (let keyIndex = 0; keyIndex < API_KEYS.length; keyIndex++) {
+    const apiKey = API_KEYS[keyIndex];
+    const ai = new GoogleGenAI({ apiKey });
+
+    console.log(`[Gemini Fallback] Using API key ${keyIndex + 1}/${API_KEYS.length}`);
+
+    // --- Inner loop: cycle through models for this key ---
+    for (let modelIndex = 0; modelIndex < FALLBACK_MODELS.length; modelIndex++) {
+      const model = FALLBACK_MODELS[modelIndex];
+
+      console.log(
+        `[Gemini Fallback]   Trying model: ${model} (model ${modelIndex + 1}/${FALLBACK_MODELS.length})`
+      );
+
+      try {
+        const response = await ai.models.generateContent({
+          model,
+          contents: { parts },
+          config: {
+            systemInstruction: SYSTEM_INSTRUCTION,
+            responseMimeType: "application/json",
+            temperature: 0.1,
+          },
+        });
+
+        if (!response.text) {
+          throw new Error("The model failed to generate a text response.");
+        }
+
+        // Success — log and return immediately
+        console.log(
+          `[Gemini Fallback] ✅ Success with key ${keyIndex + 1}, model: ${model}`
+        );
+        return response.text;
+      } catch (err: unknown) {
+        lastError = err;
+
+        // If error is retryable (429/503), log and continue to the next model
+        if (isRetryableError(err)) {
+          console.warn(
+            `[Gemini Fallback] ⚠️ Retryable error (429/503) with model "${model}" on key ${keyIndex + 1}:`,
+            err instanceof Error ? err.message : err
+          );
+          // Continue to the next model in the inner loop
+          continue;
+        }
+
+        // Non-retryable error — fail immediately, no point trying other models/keys
+        console.error(
+          `[Gemini Fallback] ❌ Non-retryable error with model "${model}" on key ${keyIndex + 1}:`,
+          err instanceof Error ? err.message : err
+        );
+        throw err;
+      }
+    }
+
+    // All models failed for this key — log before moving to next key
+    console.warn(
+      `[Gemini Fallback] All models exhausted for API key ${keyIndex + 1}. Switching to next key...`
+    );
+  }
+
+  // All keys and models exhausted — throw the last error
+  console.error("[Gemini Fallback] ❌ All API keys and models exhausted.");
+  throw lastError instanceof Error
+    ? lastError
+    : new Error("All Gemini API keys and models have been exhausted due to rate limiting (429/503).");
 }
