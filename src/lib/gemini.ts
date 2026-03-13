@@ -64,9 +64,9 @@ Extraction Rules:
 - Cover entire pdf and dont loose any data strictly. 
 - In minority status write a Single word like 'Muslim','Christan','Hindi' etc
 - isTech: Set to true ONLY for Computer, IT, AI, Data Science, and Software branches.
-- Core Flags: Set isCivil, isMechanical, isElectrical, or isElectronic to true only if the name explicitly matches.
-- isOther: Set to true for all other engineering branches (e.g., Chemical, Textile, Production, Metallurgy).
-- Mutual Exclusivity: Exactly one boolean flag must be true. All others must be false.
+- Core Flags: Set isCivil, isMechanical, isElectrical, or isElectronic to true only if the branch name explicitly matches these categories.
+- isOther: Set to true ONLY for engineering branches that do NOT fall into the specific categories above (e.g., Chemical, Textile, Production, Metallurgy, Petrochemical).
+- Mutual Exclusivity: EXACTLY one of [isTech, isCivil, isMechanical, isElectrical, isElectronic, isOther] must be true. All others MUST be false. Do not set isOther to true if any other core flag is true.
 - isMinority: Set at the college level. True if the college has minority status, otherwise false.
 
 Required JSON Schema:
