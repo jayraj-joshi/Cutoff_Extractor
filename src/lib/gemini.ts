@@ -66,10 +66,14 @@ Extraction Rules:
 - Do not fabricate or infer missing values.
 - Cover every page of the documentary and dont loose any single data point. Each table row must be captured.
 - In minority status write a Single word like 'Muslim','Christan','Hindi' etc
-- isTech: Set to true ONLY for Computer, IT, AI, Data Science, and Software branches.
-- Core Flags: Set isCivil, isMechanical, isElectrical, or isElectronic to true only if the branch name explicitly matches these categories.
-- isOther: Set to true ONLY for engineering branches that do NOT fall into the specific categories above (e.g., Chemical, Textile, Production, Metallurgy, Petrochemical).
-- Mutual Exclusivity: EXACTLY one of [isTech, isCivil, isMechanical, isElectrical, isElectronic, isOther] must be true. All others MUST be false. Do not set isOther to true if any other core flag is true.
+- BRANCH CATEGORIZATION (CRITICAL):
+  1. If the branch name contains "Computer", "IT", "Information", "AI", "Data Science", or "Software" -> set isTech: true, and ALL other flags (isCivil, isMechanical, isElectrical, isElectronic, isOther) to false.
+  2. If the branch name contains "Civil" -> set isCivil: true, and ALL other flags (isTech, isMechanical, isElectrical, isElectronic, isOther) to false.
+  3. If the branch name contains "Mechanical" -> set isMechanical: true, and ALL other flags (isTech, isCivil, isElectrical, isElectronic, isOther) to false.
+  4. If the branch name contains "Electrical" -> set isElectrical: true, and ALL other flags (isTech, isCivil, isMechanical, isElectronic, isOther) to false.
+  5. If the branch name contains "Electronic", "Telecommunication", or "ENTC" -> set isElectronic: true, and ALL other flags (isTech, isCivil, isMechanical, isElectrical, isOther) to false.
+  6. Set isOther: true ONLY if the branch name does NOT match ANY of the above categories (e.g., Chemical, Textile, Production, Metallurgy). If isOther is true, then isTech, isCivil, isMechanical, isElectrical, and isElectronic MUST be false.
+  7. MANDATORY: Exactly ONE of these 6 boolean flags must be true. It is a violation to have both isCivil: true and isOther: true.
 - isMinority: Set at the college level. True if the college has minority status, otherwise false.
 
 Required JSON Schema:
