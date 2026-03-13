@@ -54,7 +54,8 @@ Extract all tabular cutoff data from the provided MHT-CET engineering college cu
 
 Extraction Rules:
 - Output ONLY valid JSON. Do not include explanations, markdown formatting, or additional commentary.
-- Extract and include ALL seat categories present in the document (e.g., GOPENH, LOPENH, GSCH, LSCH, GSTH, LSTH, GVJH, LVJH, GNT1H, LNT1H, GNT2H, LNT2H, GNT3H, LNT3H, GOBCV, LOBCV, EWS, TFWS, ORPHAN, PWD, DEF, etc.).
+- Extract and include ALL seat categories present in the document. This includes all region-specific and state-level codes (e.g., GOPENH, LOPENH, GNT1S, PWDRSCS, etc.).
+- NO NULL VALUES: Cutoff category fields must NEVER be null. If a category is present in the document, extract its "rank" and "percentile" accurately as an object. If a category is not present for a specific stage, OMIT the field entirely from the JSON object instead of setting it to null.
 - Extract the "Home University" name for each college. Ensure the extracted "home_university" value is identical to the one found in the document (usually beside "Status").
 - Extract the "city" name for each college, ensuring it captures the main city or district name (e.g., "Ahmednagar" from "Dist.Ahmednagar").
 - Correctly identify boundaries between seat sections (Home University, Other Than Home University, State Level). Map sections strictly to their own keys.
@@ -63,7 +64,7 @@ Extraction Rules:
 - Group all branches under their respective college codes.
 - Preserve numerical precision exactly as shown in the document.
 - Do not fabricate or infer missing values.
-- Cover entire pdf and dont loose any data strictly. 
+- Cover every page of the documentary and dont loose any single data point. Each table row must be captured.
 - In minority status write a Single word like 'Muslim','Christan','Hindi' etc
 - isTech: Set to true ONLY for Computer, IT, AI, Data Science, and Software branches.
 - Core Flags: Set isCivil, isMechanical, isElectrical, or isElectronic to true only if the branch name explicitly matches these categories.
