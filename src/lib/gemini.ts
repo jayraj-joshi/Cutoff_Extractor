@@ -56,15 +56,16 @@ Extraction Rules:
 - Output ONLY valid JSON. Do not include explanations, markdown formatting, or additional commentary.
 - Extract and map columns precisely. Ensure that for each seat category (e.g., GOPENH, LOPENH, EWS, TFWS, etc.), the correct "rank" (integer) and "percentile" (decimal) are paired accurately.
 - Extract the "Home University" name for each college. This value is typically mentioned beside the "Status" field in the document header for each college. Ensure the extracted "home_university" value is identical to the one found in that location.
+- Extract the "city" name for each college, ensuring it captures the main city or district name. For addresses containing "Dist.[CityName]" or "Dist. [CityName]", the city should be "[CityName]". For example, "Ahmednagar" should be extracted from "Dist.Ahmednagar".
 - If any category, stage, or section is missing for a branch, return an empty array or omit the field according to the schema.
 - Group all branches under their respective college codes.
 - Preserve numerical precision exactly as shown in the document.
 - Do not fabricate or infer missing values.
 - Cover entire pdf and dont loose any data strictly. 
 - In minority status write a Single word like 'Muslim','Christan','Hindi' etc
-- is_tech: Set to true ONLY for Computer, IT, AI, Data Science, and Software branches.
-- Core Flags: Set isCivil, isMechanical, isElectrical, or is_electronic to true only if the name explicitly matches.
-- is_other: Set to true for all other engineering branches (e.g., Chemical, Textile, Production, Metallurgy).
+- isTech: Set to true ONLY for Computer, IT, AI, Data Science, and Software branches.
+- Core Flags: Set isCivil, isMechanical, isElectrical, or isElectronic to true only if the name explicitly matches.
+- isOther: Set to true for all other engineering branches (e.g., Chemical, Textile, Production, Metallurgy).
 - Mutual Exclusivity: Exactly one boolean flag must be true. All others must be false.
 - isMinority: Set at the college level. True if the college has minority status, otherwise false.
 
