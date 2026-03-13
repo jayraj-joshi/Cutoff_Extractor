@@ -54,10 +54,12 @@ Extract all tabular cutoff data from the provided MHT-CET engineering college cu
 
 Extraction Rules:
 - Output ONLY valid JSON. Do not include explanations, markdown formatting, or additional commentary.
-- Extract and map columns precisely. Ensure that for each seat category (e.g., GOPENH, LOPENH, EWS, TFWS, etc.), the correct "rank" (integer) and "percentile" (decimal) are paired accurately.
-- Extract the "Home University" name for each college. This value is typically mentioned beside the "Status" field in the document header for each college. Ensure the extracted "home_university" value is identical to the one found in that location.
-- Extract the "city" name for each college, ensuring it captures the main city or district name. For addresses containing "Dist.[CityName]" or "Dist. [CityName]", the city should be "[CityName]". For example, "Ahmednagar" should be extracted from "Dist.Ahmednagar".
-- If any category, stage, or section is missing for a branch, return an empty array or omit the field according to the schema.
+- Extract and include ALL seat categories present in the document (e.g., GOPENH, LOPENH, GSCH, LSCH, GSTH, LSTH, GVJH, LVJH, GNT1H, LNT1H, GNT2H, LNT2H, GNT3H, LNT3H, GOBCV, LOBCV, EWS, TFWS, ORPHAN, PWD, DEF, etc.).
+- Extract the "Home University" name for each college. Ensure the extracted "home_university" value is identical to the one found in the document (usually beside "Status").
+- Extract the "city" name for each college, ensuring it captures the main city or district name (e.g., "Ahmednagar" from "Dist.Ahmednagar").
+- Correctly identify boundaries between seat sections (Home University, Other Than Home University, State Level). Map sections strictly to their own keys.
+- The "Stage" field MUST only contain values like "Stage-I" or "Stage-II". NEVER use section names (like "State Level") as a stage value.
+- If any category, stage, or section is missing, return an empty array or omit the field.
 - Group all branches under their respective college codes.
 - Preserve numerical precision exactly as shown in the document.
 - Do not fabricate or infer missing values.
@@ -93,14 +95,33 @@ Required JSON Schema:
           "Home_University_Seats_Allotted_to_Home_University_Candidates": [
             {
               "Stage": "string",
-              "GOPENH": { "rank": "integer", "percentile": "number" },
-              "LOPENH": { "rank": "integer", "percentile": "number" }
+              "CATEGORY_CODE": { "rank": "integer", "percentile": "number" }
             }
           ],
-          "Other_Than_Home_University_Seats_Allotted_to_Other_Than_Home_University_Candidates": [],
-          "Home_University_Seats_Allotted_to_Other_Than_Home_University_Candidates": [],
-          "Other_Than_Home_University_Seats_Allotted_to_Home_University_Candidates": [],
-          "State_Level": []
+          "Other_Than_Home_University_Seats_Allotted_to_Other_Than_Home_University_Candidates": [
+            {
+              "Stage": "string",
+              "CATEGORY_CODE": { "rank": "integer", "percentile": "number" }
+            }
+          ],
+          "Home_University_Seats_Allotted_to_Other_Than_Home_University_Candidates": [
+            {
+              "Stage": "string",
+              "CATEGORY_CODE": { "rank": "integer", "percentile": "number" }
+            }
+          ],
+          "Other_Than_Home_University_Seats_Allotted_to_Home_University_Candidates": [
+            {
+              "Stage": "string",
+              "CATEGORY_CODE": { "rank": "integer", "percentile": "number" }
+            }
+          ],
+          "State_Level": [
+            {
+              "Stage": "string",
+              "CATEGORY_CODE": { "rank": "integer", "percentile": "number" }
+            }
+          ]
         }
       }
     ]
