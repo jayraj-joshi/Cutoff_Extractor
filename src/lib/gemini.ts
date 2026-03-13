@@ -64,7 +64,7 @@ Extraction Rules:
 - Preserve numerical precision exactly as shown in the document.
 - Do not fabricate or infer missing values.
 - Cover every page of the documentary and dont loose any single data point. Each table row must be captured.
-- In minority status write a Single word like 'Muslim','Christan','Hindi' etc
+- In minority status write a Single word like 'Muslim','Christian','Hindi' etc. If the college has no minority status, set minority_status to "None".
 - BRANCH CATEGORIZATION (CRITICAL):
   1. If the branch name contains "Computer", "IT", "Information", "AI", "Data Science", or "Software" -> set isTech: true, and ALL other flags (isCivil, isMechanical, isElectrical, isElectronic, isOther) to false.
   2. If the branch name contains "Civil" -> set isCivil: true, and ALL other flags (isTech, isMechanical, isElectrical, isElectronic, isOther) to false.
