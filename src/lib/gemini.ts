@@ -136,10 +136,10 @@ Required JSON Schema:
  * Extracts MHT-CET cutoff data using Gemini with automatic fallback.
  *
  * Fallback logic:
- *   1. Start with API_KEY[0] and try each model in FALLBACK_MODELS sequentially.
- *   2. If a 429/503 error occurs, move to the next model.
- *   3. If all models fail for the current key, switch to the next API key.
- *   4. If all keys and models are exhausted, throw the last encountered error.
+ *   1. Start with FALLBACK_MODELS[0] and try each API key sequentially.
+ *   2. If a 429/503 error occurs, move to the next API key.
+ *   3. If all keys fail for the current model, switch to the next model.
+ *   4. If all models and keys are exhausted, throw the last encountered error.
  *   5. Non-retryable errors (e.g., 400 bad request) are thrown immediately.
  */
 export async function extractData(input: { text?: string; pdfBase64?: string }) {
@@ -169,20 +169,17 @@ export async function extractData(input: { text?: string; pdfBase64?: string }) 
 
   let lastError: unknown = null;
 
-  // --- Outer loop: cycle through API keys ---
-  for (let keyIndex = 0; keyIndex < API_KEYS.length; keyIndex++) {
-    const apiKey = API_KEYS[keyIndex];
-    const ai = new GoogleGenAI({ apiKey });
+  // --- Outer loop: cycle through models ---
+  for (let modelIndex = 0; modelIndex < FALLBACK_MODELS.length; modelIndex++) {
+    const model = FALLBACK_MODELS[modelIndex];
+    console.log(`[Gemini Fallback] Trying model: ${model} (${modelIndex + 1}/${FALLBACK_MODELS.length})`);
 
-    console.log(`[Gemini Fallback] Using API key ${keyIndex + 1}/${API_KEYS.length}`);
+    // --- Inner loop: cycle through API keys for this model ---
+    for (let keyIndex = 0; keyIndex < API_KEYS.length; keyIndex++) {
+      const apiKey = API_KEYS[keyIndex];
+      const ai = new GoogleGenAI({ apiKey });
 
-    // --- Inner loop: cycle through models for this key ---
-    for (let modelIndex = 0; modelIndex < FALLBACK_MODELS.length; modelIndex++) {
-      const model = FALLBACK_MODELS[modelIndex];
-
-      console.log(
-        `[Gemini Fallback]   Trying model: ${model} (model ${modelIndex + 1}/${FALLBACK_MODELS.length})`
-      );
+      console.log(`[Gemini Fallback]   Using API key ${keyIndex + 1}/${API_KEYS.length}`);
 
       try {
         const response = await ai.models.generateContent({
@@ -201,19 +198,19 @@ export async function extractData(input: { text?: string; pdfBase64?: string }) 
 
         // Success — log and return immediately
         console.log(
-          `[Gemini Fallback] ✅ Success with key ${keyIndex + 1}, model: ${model}`
+          `[Gemini Fallback] ✅ Success with model: ${model}, key ${keyIndex + 1}`
         );
         return response.text;
       } catch (err: unknown) {
         lastError = err;
 
-        // If error is retryable (429/503), log and continue to the next model
+        // If error is retryable (429/503), log and continue to the next API key
         if (isRetryableError(err)) {
           console.warn(
             `[Gemini Fallback] ⚠️ Retryable error (429/503) with model "${model}" on key ${keyIndex + 1}:`,
             err instanceof Error ? err.message : err
           );
-          // Continue to the next model in the inner loop
+          // Continue to the next API key in the inner loop
           continue;
         }
 
@@ -226,9 +223,9 @@ export async function extractData(input: { text?: string; pdfBase64?: string }) 
       }
     }
 
-    // All models failed for this key — log before moving to next key
+    // All keys failed for this model — log before moving to next model
     console.warn(
-      `[Gemini Fallback] All models exhausted for API key ${keyIndex + 1}. Switching to next key...`
+      `[Gemini Fallback] All API keys exhausted for model "${model}". Switching to next model...`
     );
   }
 
