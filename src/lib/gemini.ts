@@ -48,7 +48,7 @@ function isRetryableError(error: unknown): boolean {
   return false;
 }
 
-const SYSTEM_INSTRUCTION = `You are an expert data extraction API.
+const MHT_CET_SYSTEM_INSTRUCTION = `You are an expert data extraction API.
 Extract all tabular cutoff data from the provided MHT-CET engineering college cutoff document and convert it strictly into the structured JSON format defined below.
 
 Extraction Rules:
@@ -132,6 +132,36 @@ Required JSON Schema:
   }
 ]`;
 
+const AIQ_SYSTEM_INSTRUCTION = `You are an expert data extraction API.
+Extract all tabular AIQ (All India Quota) cutoff data from the provided document and convert it strictly into the structured JSON format defined below.
+
+Extraction Rules:
+- Output ONLY valid JSON. Do not include explanations, markdown formatting, or additional commentary.
+- Extract "Sr. No.", "All India Merit" (Rank and Percentile), "Choice Code", "Institute Name", "Course Name", "Merit Exam", "Type", and "Seat Type".
+- Capture every single row from the tables.
+- Preserve numerical precision exactly as shown in the document.
+
+Required JSON Schema:
+{
+  "results": [
+    {
+      "sr_no": "integer",
+      "all_india_merit": {
+        "rank": "integer",
+        "percentile": "number"
+      },
+      "choice_code": "string",
+      "institute_name": "string",
+      "course_name": "string",
+      "merit_exam": "string",
+      "type": "string",
+      "seat_type": "string"
+    }
+  ]
+}`;
+
+export type ExtractionMode = 'MHT-CET' | 'AIQ';
+
 /**
  * Extracts MHT-CET cutoff data using Gemini with automatic fallback.
  *
@@ -142,7 +172,10 @@ Required JSON Schema:
  *   4. If all models and keys are exhausted, throw the last encountered error.
  *   5. Non-retryable errors (e.g., 400 bad request) are thrown immediately.
  */
-export async function extractData(input: { text?: string; pdfBase64?: string }) {
+export async function extractData(input: { text?: string; pdfBase64?: string; mode?: ExtractionMode }) {
+  const mode = input.mode || 'MHT-CET';
+  const systemInstruction = mode === 'AIQ' ? AIQ_SYSTEM_INSTRUCTION : MHT_CET_SYSTEM_INSTRUCTION;
+
   const parts: any[] = [];
 
   if (input.pdfBase64) {
@@ -186,7 +219,7 @@ export async function extractData(input: { text?: string; pdfBase64?: string }) 
           model,
           contents: { parts },
           config: {
-            systemInstruction: SYSTEM_INSTRUCTION,
+            systemInstruction: systemInstruction,
             responseMimeType: "application/json",
             temperature: 0.1,
           },

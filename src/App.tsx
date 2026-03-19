@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Upload, FileText, Copy, Download, Loader2, Check, AlertCircle, FolderUp, FileUp, X, CheckCircle2, XCircle, Clock } from 'lucide-react';
-import { extractData } from './lib/gemini';
+import { extractData, ExtractionMode } from './lib/gemini';
+
 
 const getBase64 = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
@@ -42,6 +43,8 @@ export default function App() {
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [mode, setMode] = useState<ExtractionMode>('MHT-CET');
+
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
@@ -88,7 +91,7 @@ export default function App() {
 
     if (activeTab === 'text') {
       try {
-        const extractedJson = await extractData({ text: textInput });
+        const extractedJson = await extractData({ text: textInput, mode });
         const cleanJson = extractJsonFromText(extractedJson);
         const parsed = JSON.parse(cleanJson);
         setResult(JSON.stringify(parsed, null, 2));
@@ -99,6 +102,7 @@ export default function App() {
       }
       return;
     }
+
 
     // PDF Processing with Concurrency Limit
     const concurrencyLimit = 5;
@@ -122,17 +126,23 @@ export default function App() {
 
         try {
           const base64 = await getBase64(fileState.file);
-          const extractedJson = await extractData({ pdfBase64: base64 });
+          const extractedJson = await extractData({ pdfBase64: base64, mode });
           const cleanJson = extractJsonFromText(extractedJson);
           const parsed = JSON.parse(cleanJson);
           
-          const dataArray = Array.isArray(parsed) ? parsed : [parsed];
+          let dataArray: any[];
+          if (mode === 'AIQ') {
+            dataArray = Array.isArray(parsed.results) ? parsed.results : [];
+          } else {
+            dataArray = Array.isArray(parsed) ? parsed : [parsed];
+          }
           allResults.push(...dataArray);
 
           setFiles(prev => prev.map((f, i) => i === currentIndex ? { ...f, status: 'success', data: dataArray } : f));
         } catch (err: any) {
           setFiles(prev => prev.map((f, i) => i === currentIndex ? { ...f, status: 'error', error: err.message || 'Extraction failed' } : f));
         }
+
       }
     };
 
@@ -140,8 +150,13 @@ export default function App() {
     await Promise.all(workers);
 
     if (allResults.length > 0) {
-      setResult(JSON.stringify(allResults, null, 2));
+      if (mode === 'AIQ') {
+        setResult(JSON.stringify({ results: allResults }, null, 2));
+      } else {
+        setResult(JSON.stringify(allResults, null, 2));
+      }
     } else {
+
       const hasErrors = files.some(f => f.status === 'error');
       if (hasErrors) {
          setError('Failed to extract data from the provided files. Check individual file errors.');
@@ -167,7 +182,8 @@ export default function App() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'mht_cet_cutoff.json';
+      a.download = mode === 'AIQ' ? 'aiq_cutoff.json' : 'mht_cet_cutoff.json';
+
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -185,7 +201,33 @@ export default function App() {
             </div>
             <h1 className="text-xl font-semibold tracking-tight text-slate-900">MHT-CET Extractor</h1>
           </div>
+
+          <div className="flex items-center gap-4">
+            <div className="flex items-center bg-slate-100 p-1 rounded-lg">
+              <button
+                onClick={() => setMode('MHT-CET')}
+                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+                  mode === 'MHT-CET'
+                    ? 'bg-white text-indigo-600 shadow-sm'
+                    : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                MHT-CET
+              </button>
+              <button
+                onClick={() => setMode('AIQ')}
+                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+                  mode === 'AIQ'
+                    ? 'bg-white text-indigo-600 shadow-sm'
+                    : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                AIQ
+              </button>
+            </div>
+          </div>
         </div>
+
       </header>
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
