@@ -25,7 +25,7 @@ function isRetryableError(error: unknown): boolean {
   if (error instanceof Error) {
     const message = error.message || "";
     // Check for HTTP status codes in the error message
-    if (message.includes("429") || message.includes("503")) {
+    if (message.includes("429") || message.includes("503") || message.includes("403")) {
       return true;
     }
     // Check for common rate-limit / overload phrases
@@ -33,7 +33,8 @@ function isRetryableError(error: unknown): boolean {
       message.toLowerCase().includes("rate limit") ||
       message.toLowerCase().includes("resource exhausted") ||
       message.toLowerCase().includes("overloaded") ||
-      message.toLowerCase().includes("model is overloaded")
+      message.toLowerCase().includes("model is overloaded") ||
+      message.toLowerCase().includes("forbidden")
     ) {
       return true;
     }
@@ -41,12 +42,13 @@ function isRetryableError(error: unknown): boolean {
   // Check for a status or statusCode property on the error object
   if (typeof error === "object" && error !== null) {
     const status = (error as any).status ?? (error as any).statusCode;
-    if (status === 429 || status === 503) {
+    if (status === 429 || status === 503 || status === 403) {
       return true;
     }
   }
   return false;
 }
+
 
 const MHT_CET_SYSTEM_INSTRUCTION = `You are an expert data extraction API.
 Extract all tabular cutoff data from the provided MHT-CET engineering college cutoff document and convert it strictly into the structured JSON format defined below.
@@ -240,9 +242,10 @@ export async function extractData(input: { text?: string; pdfBase64?: string; mo
         // If error is retryable (429/503), log and continue to the next API key
         if (isRetryableError(err)) {
           console.warn(
-            `[Gemini Fallback] ⚠️ Retryable error (429/503) with model "${model}" on key ${keyIndex + 1}:`,
+            `[Gemini Fallback] ⚠️ Retryable error (429/503/403) with model "${model}" on key ${keyIndex + 1}:`,
             err instanceof Error ? err.message : err
           );
+
           // Continue to the next API key in the inner loop
           continue;
         }
