@@ -140,6 +140,7 @@ Extract all tabular AIQ (All India Quota) cutoff data from the provided document
 Extraction Rules:
 - Output ONLY valid JSON. Do not include explanations, markdown formatting, or additional commentary.
 - Extract "Sr. No.", "All India Merit" (Rank and Percentile), "Choice Code", "Institute Name", "Course Name", "Merit Exam", "Type", and "Seat Type".
+- INSTITUTE EXTRACTION (CRITICAL): Separate the Institute Name field into "institute_code" (the numeric part, e.g., "01101") and "institute_name" (the textual part, e.g., "Shri Sant Gajanan Maharaj College of Engineering, Shegaon"). Omit the hyphen and extra spaces between them.
 - Capture every single row from the tables.
 - Preserve numerical precision exactly as shown in the document.
 
@@ -153,6 +154,7 @@ Required JSON Schema:
         "percentile": "number"
       },
       "choice_code": "string",
+      "institute_code": "string",
       "institute_name": "string",
       "course_name": "string",
       "merit_exam": "string",
@@ -161,6 +163,7 @@ Required JSON Schema:
     }
   ]
 }`;
+
 
 export type ExtractionMode = 'MHT-CET' | 'AIQ';
 
