@@ -182,7 +182,7 @@ export default function App() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = mode === 'AIQ' ? 'aiq_cutoff.json' : 'mht_cet_cutoff.json';
+      a.download = mode === 'AIQ' ? 'aiq_cutoff.json' : mode === 'Pharmacy' ? 'pharmacy_cutoff.json' : 'mht_cet_cutoff.json';
 
       document.body.appendChild(a);
       a.click();
@@ -223,6 +223,16 @@ export default function App() {
                 }`}
               >
                 AIQ
+              </button>
+              <button
+                onClick={() => setMode('Pharmacy')}
+                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+                  mode === 'Pharmacy'
+                    ? 'bg-white text-indigo-600 shadow-sm'
+                    : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                Pharmacy
               </button>
             </div>
           </div>

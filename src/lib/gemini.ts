@@ -165,7 +165,59 @@ Required JSON Schema:
 }`;
 
 
-export type ExtractionMode = 'MHT-CET' | 'AIQ';
+const PHARMACY_SYSTEM_INSTRUCTION = `You are an expert data extraction API.
+Extract all tabular cutoff data from the provided Pharmacy college cutoff document and convert it strictly into the structured JSON format defined below.
+
+Extraction Rules:
+- Output ONLY valid JSON. Do not include explanations, markdown formatting, or additional commentary.
+- Extract and include ALL seat categories present in the document. This includes all region-specific and state-level codes.
+- NO NULL VALUES: Cutoff category fields must NEVER be null. If a category is present in the document, extract its "rank" and "percentile" accurately as an object. If a category is not present for a specific stage, OMIT the field entirely from the JSON object instead of setting it to null.
+- Extract the "Status" for each college (e.g., "Government", "Un-Aided", etc.).
+- Correctly identify boundaries between seat sections (Home University, Other Than Home University, State Level). Map sections strictly to their own keys.
+- The "Stage" field MUST only contain values like "I" or "II". NEVER use section names as a stage value.
+- If any category, stage, or section is missing, return an empty array or omit the field.
+- Group all courses under their respective college codes. The college header looks like "1003 - Government College of Pharmacy, Amravati", where 1003 is college_code and the rest is college_name.
+- The course header looks like "100382310 - Pharmacy", where 100382310 is course_code and Pharmacy is course_name.
+- Preserve numerical precision exactly as shown in the document.
+- Do not fabricate or infer missing values.
+- Cover every page of the document and don't lose any single data point. Each table row must be captured.
+
+Required JSON Schema:
+[
+  {
+    "college_code": "string",
+    "college_name": "string",
+    "status": "string",
+    "courses": [
+      {
+        "course_code": "string",
+        "course_name": "string",
+        "cutoff_data": {
+          "Home_University_Seats_Allotted_to_Home_University_Candidates": [
+            {
+              "Stage": "string",
+              "CATEGORY_CODE": { "rank": "integer", "percentile": "number" }
+            }
+          ],
+          "Other_Than_Home_University_Seats_Allotted_to_Other_Than_Home_University_Candidates": [
+            {
+              "Stage": "string",
+              "CATEGORY_CODE": { "rank": "integer", "percentile": "number" }
+            }
+          ],
+          "State_Level": [
+            {
+              "Stage": "string",
+              "CATEGORY_CODE": { "rank": "integer", "percentile": "number" }
+            }
+          ]
+        }
+      }
+    ]
+  }
+]`;
+
+export type ExtractionMode = 'MHT-CET' | 'AIQ' | 'Pharmacy';
 
 /**
  * Extracts MHT-CET cutoff data using Gemini with automatic fallback.
@@ -179,7 +231,9 @@ export type ExtractionMode = 'MHT-CET' | 'AIQ';
  */
 export async function extractData(input: { text?: string; pdfBase64?: string; mode?: ExtractionMode }) {
   const mode = input.mode || 'MHT-CET';
-  const systemInstruction = mode === 'AIQ' ? AIQ_SYSTEM_INSTRUCTION : MHT_CET_SYSTEM_INSTRUCTION;
+  let systemInstruction = MHT_CET_SYSTEM_INSTRUCTION;
+  if (mode === 'AIQ') systemInstruction = AIQ_SYSTEM_INSTRUCTION;
+  if (mode === 'Pharmacy') systemInstruction = PHARMACY_SYSTEM_INSTRUCTION;
 
   const parts: any[] = [];
 
