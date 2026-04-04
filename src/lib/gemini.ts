@@ -174,6 +174,10 @@ Extraction Rules:
 - Extract and include ALL seat categories present in the document. This includes all region-specific and state-level codes.
 - NO NULL VALUES: Cutoff category fields must NEVER be null. If a category is present in the document, extract its "rank" and "percentile" accurately as an object. If a category is not present for a specific stage, OMIT the field entirely from the JSON object instead of setting it to null.
 - Extract the "Status" for each college (e.g., "Government", "Un-Aided", etc.).
+- Extract the "city" name for each college, ensuring it captures the main city or district name (e.g., "Amravati" from "Government College of Pharmacy, Amravati").
+- Extract the "Home University" name for each college. Ensure the extracted "home_university" value is exactly as it appears in the document.
+- In minority status write a Single word like 'Muslim','Christian','Hindi' etc. If the college has no minority status, set minority_status to "None".
+- isMinority: Set at the college level. True if the college has minority status, otherwise false.
 - Correctly identify boundaries between seat sections (Home University, Other Than Home University, State Level). Map sections strictly to their own keys.
 - The "Stage" field MUST only contain values like "I" or "II". NEVER use section names as a stage value.
 - If any category, stage, or section is missing, return an empty array or omit the field.
@@ -188,7 +192,11 @@ Required JSON Schema:
   {
     "college_code": "string",
     "college_name": "string",
+    "home_university": "string",
+    "city": "string",
     "status": "string",
+    "minority_status": "string",
+    "isMinority": "boolean",
     "courses": [
       {
         "course_code": "string",
