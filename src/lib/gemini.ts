@@ -25,7 +25,7 @@ function isRetryableError(error: unknown): boolean {
   if (error instanceof Error) {
     const message = error.message || "";
     // Check for HTTP status codes in the error message
-    if (message.includes("429") || message.includes("503") || message.includes("403")) {
+    if (message.includes("429") || message.includes("503") || message.includes("403") || message.includes("400")) {
       return true;
     }
     // Check for common rate-limit / overload phrases
@@ -34,7 +34,8 @@ function isRetryableError(error: unknown): boolean {
       message.toLowerCase().includes("resource exhausted") ||
       message.toLowerCase().includes("overloaded") ||
       message.toLowerCase().includes("model is overloaded") ||
-      message.toLowerCase().includes("forbidden")
+      message.toLowerCase().includes("forbidden") ||
+      message.toLowerCase().includes("bad request")
     ) {
       return true;
     }
@@ -42,7 +43,7 @@ function isRetryableError(error: unknown): boolean {
   // Check for a status or statusCode property on the error object
   if (typeof error === "object" && error !== null) {
     const status = (error as any).status ?? (error as any).statusCode;
-    if (status === 429 || status === 503 || status === 403) {
+    if (status === 429 || status === 503 || status === 403 || status === 400) {
       return true;
     }
   }
@@ -296,10 +297,10 @@ export async function extractData(input: { text?: string; pdfBase64?: string; mo
       } catch (err: unknown) {
         lastError = err;
 
-        // If error is retryable (429/503), log and continue to the next API key
+        // If error is retryable (400/403/429/503), log and continue to the next API key
         if (isRetryableError(err)) {
           console.warn(
-            `[Gemini Fallback] ⚠️ Retryable error (429/503/403) with model "${model}" on key ${keyIndex + 1}:`,
+            `[Gemini Fallback] ⚠️ Retryable error (400/403/429/503) with model "${model}" on key ${keyIndex + 1}:`,
             err instanceof Error ? err.message : err
           );
 
@@ -326,5 +327,5 @@ export async function extractData(input: { text?: string; pdfBase64?: string; mo
   console.error("[Gemini Fallback] ❌ All API keys and models exhausted.");
   throw lastError instanceof Error
     ? lastError
-    : new Error("All Gemini API keys and models have been exhausted due to rate limiting (429/503).");
+    : new Error("All Gemini API keys and models have been exhausted due to rate limiting or authentication errors (400/403/429/503).");
 }
