@@ -56,7 +56,7 @@ function isRetryableError(error: unknown): boolean {
 }
 
 
-const MHT_CET_SYSTEM_INSTRUCTION = `You are an expert data extraction API.
+const MHT_CET_SYSTEM_INSTRUCTION = (minimal: boolean) => `You are an expert data extraction API.
 Extract all tabular cutoff data from the provided MHT-CET engineering college cutoff document and convert it strictly into the structured JSON format defined below.
 
 Extraction Rules:
@@ -72,7 +72,7 @@ Extraction Rules:
 - Preserve numerical precision exactly as shown in the document.
 - Do not fabricate or infer missing values.
 - Cover every page of the documentary and dont loose any single data point. Each table row must be captured.
-- In minority status write a Single word like 'Muslim','Christian','Hindi' etc. If the college has no minority status, set minority_status to "None".
+${minimal ? '' : `- In minority status write a Single word like 'Muslim','Christian','Hindi' etc. If the college has no minority status, set minority_status to "None".
 - BRANCH CATEGORIZATION (CRITICAL):
   1. If the branch name contains "Computer", "IT", "Information", "AI", "Data Science", or "Software" -> set isTech: true, and ALL other flags (isCivil, isMechanical, isElectrical, isElectronic, isOther) to false.
   2. If the branch name contains "Civil" -> set isCivil: true, and ALL other flags (isTech, isMechanical, isElectrical, isElectronic, isOther) to false.
@@ -81,7 +81,7 @@ Extraction Rules:
   5. If the branch name contains "Electronic", "Telecommunication", or "ENTC" -> set isElectronic: true, and ALL other flags (isTech, isCivil, isMechanical, isElectrical, isOther) to false.
   6. Set isOther: true ONLY if the branch name does NOT match ANY of the above categories (e.g., Chemical, Textile, Production, Metallurgy). If isOther is true, then isTech, isCivil, isMechanical, isElectrical, and isElectronic MUST be false.
   7. MANDATORY: Exactly ONE of these 6 boolean flags must be true. It is a violation to have both isCivil: true and isOther: true.
-- isMinority: Set at the college level. True if the college has minority status, otherwise false.
+- isMinority: Set at the college level. True if the college has minority status, otherwise false.`}
 
 Required JSON Schema:
 [
@@ -91,18 +91,12 @@ Required JSON Schema:
     "home_university": "string",
     "city": "string",
     "status": "string",
-    "minority_status": "string",
-    "isMinority": "boolean",
+    ${minimal ? '' : '"minority_status": "string",\n    "isMinority": "boolean",'}
     "branches": [
       {
         "branch_code": "string",
         "branch_name": "string",
-        "isTech": "boolean",
-        "isElectronic": "boolean",
-        "isOther": "boolean",
-        "isCivil": "boolean",
-        "isMechanical": "boolean",
-        "isElectrical": "boolean",
+        ${minimal ? '' : '"isTech": "boolean",\n        "isElectronic": "boolean",\n        "isOther": "boolean",\n        "isCivil": "boolean",\n        "isMechanical": "boolean",\n        "isElectrical": "boolean",'}
         "cutoff_data": {
           "Home_University_Seats_Allotted_to_Home_University_Candidates": [
             {
@@ -171,7 +165,7 @@ Required JSON Schema:
 }`;
 
 
-const PHARMACY_SYSTEM_INSTRUCTION = `You are an expert data extraction API.
+const PHARMACY_SYSTEM_INSTRUCTION = (minimal: boolean) => `You are an expert data extraction API.
 Extract all tabular cutoff data from the provided Pharmacy college cutoff document and convert it strictly into the structured JSON format defined below.
 
 Extraction Rules:
@@ -181,8 +175,8 @@ Extraction Rules:
 - Extract the "Status" for each college (e.g., "Government", "Un-Aided", etc.).
 - Extract the "city" name for each college, ensuring it captures the main city or district name (e.g., "Amravati" from "Government College of Pharmacy, Amravati").
 - Extract the "Home University" name for each college. Ensure the extracted "home_university" value is exactly as it appears in the document.
-- In minority status write a Single word like 'Muslim','Christian','Hindi' etc. If the college has no minority status, set minority_status to "None".
-- isMinority: Set at the college level. True if the college has minority status, otherwise false.
+${minimal ? '' : `- In minority status write a Single word like 'Muslim','Christian','Hindi' etc. If the college has no minority status, set minority_status to "None".
+- isMinority: Set at the college level. True if the college has minority status, otherwise false.`}
 - Correctly identify boundaries between seat sections (Home University, Other Than Home University, State Level). Map sections strictly to their own keys.
 - The "Stage" field MUST only contain values like "I" or "II". NEVER use section names as a stage value.
 - If any category, stage, or section is missing, return an empty array or omit the field.
@@ -200,8 +194,7 @@ Required JSON Schema:
     "home_university": "string",
     "city": "string",
     "status": "string",
-    "minority_status": "string",
-    "isMinority": "boolean",
+    ${minimal ? '' : '"minority_status": "string",\n    "isMinority": "boolean",'}
     "courses": [
       {
         "course_code": "string",
@@ -243,11 +236,13 @@ export type ExtractionMode = 'MHT-CET' | 'AIQ' | 'Pharmacy';
  *   4. If all models and keys are exhausted, throw the last encountered error.
  *   5. Non-retryable errors (e.g., 400 bad request) are thrown immediately.
  */
-export async function extractData(input: { text?: string; pdfBase64?: string; mode?: ExtractionMode }) {
+export async function extractData(input: { text?: string; pdfBase64?: string; mode?: ExtractionMode; minimal?: boolean }) {
   const mode = input.mode || 'MHT-CET';
-  let systemInstruction = MHT_CET_SYSTEM_INSTRUCTION;
+  const minimal = !!input.minimal;
+  
+  let systemInstruction = MHT_CET_SYSTEM_INSTRUCTION(minimal);
   if (mode === 'AIQ') systemInstruction = AIQ_SYSTEM_INSTRUCTION;
-  if (mode === 'Pharmacy') systemInstruction = PHARMACY_SYSTEM_INSTRUCTION;
+  if (mode === 'Pharmacy') systemInstruction = PHARMACY_SYSTEM_INSTRUCTION(minimal);
 
   const parts: any[] = [];
 

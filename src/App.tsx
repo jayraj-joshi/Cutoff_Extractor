@@ -50,6 +50,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<'pdf' | 'text'>('pdf');
   const [textInput, setTextInput] = useState('');
   const [mode, setMode] = useState<ExtractionMode>('MHT-CET');
+  const [minimal, setMinimal] = useState(false);
   
   // Batch State
   const [batches, setBatches] = useState<Batch[]>(() => {
@@ -162,7 +163,7 @@ export default function App() {
 
     if (activeTab === 'text') {
       try {
-        const extractedJson = await extractData({ text: textInput, mode });
+        const extractedJson = await extractData({ text: textInput, mode, minimal });
         const cleanJson = extractJsonFromText(extractedJson);
         const parsed = JSON.parse(cleanJson);
         const resultStr = JSON.stringify(parsed, null, 2);
@@ -199,7 +200,7 @@ export default function App() {
 
         try {
           const base64 = await getBase64(fileState.file);
-          const extractedJson = await extractData({ pdfBase64: base64, mode });
+          const extractedJson = await extractData({ pdfBase64: base64, mode, minimal });
           const cleanJson = extractJsonFromText(extractedJson);
           const parsed = JSON.parse(cleanJson);
           
@@ -334,7 +335,22 @@ export default function App() {
             >
               <Download className="w-3.5 h-3.5" /> Download All
             </button>
-            <div className="flex items-center bg-slate-100 p-1 rounded-lg">
+            <div className="flex items-center gap-4">
+              <label className="flex items-center gap-2 cursor-pointer group">
+                <div className="relative">
+                  <input 
+                    type="checkbox" 
+                    className="sr-only" 
+                    checked={minimal}
+                    onChange={() => setMinimal(!minimal)}
+                  />
+                  <div className={`block w-8 h-5 rounded-full transition-colors ${minimal ? 'bg-indigo-600' : 'bg-slate-300'}`}></div>
+                  <div className={`absolute left-1 top-1 bg-white w-3 h-3 rounded-full transition-transform ${minimal ? 'translate-x-3' : ''}`}></div>
+                </div>
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider group-hover:text-slate-700 transition-colors">Minimal</span>
+              </label>
+
+              <div className="flex items-center bg-slate-100 p-1 rounded-lg">
               <button
                 onClick={() => setMode('MHT-CET')}
                 className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
