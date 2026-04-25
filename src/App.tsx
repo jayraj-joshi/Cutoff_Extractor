@@ -351,40 +351,40 @@ export default function App() {
               </label>
 
               <div className="flex items-center bg-slate-100 p-1 rounded-lg">
-              <button
-                onClick={() => setMode('MHT-CET')}
-                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
-                  mode === 'MHT-CET'
-                    ? 'bg-white text-indigo-600 shadow-sm'
-                    : 'text-slate-500 hover:text-slate-700'
-                }`}
-              >
-                MHT-CET
-              </button>
-              <button
-                onClick={() => setMode('AIQ')}
-                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
-                  mode === 'AIQ'
-                    ? 'bg-white text-indigo-600 shadow-sm'
-                    : 'text-slate-500 hover:text-slate-700'
-                }`}
-              >
-                AIQ
-              </button>
-              <button
-                onClick={() => setMode('Pharmacy')}
-                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
-                  mode === 'Pharmacy'
-                    ? 'bg-white text-indigo-600 shadow-sm'
-                    : 'text-slate-500 hover:text-slate-700'
-                }`}
-              >
-                Pharmacy
-              </button>
+                <button
+                  onClick={() => setMode('MHT-CET')}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+                    mode === 'MHT-CET'
+                      ? 'bg-white text-indigo-600 shadow-sm'
+                      : 'text-slate-500 hover:text-slate-700'
+                  }`}
+                >
+                  MHT-CET
+                </button>
+                <button
+                  onClick={() => setMode('AIQ')}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+                    mode === 'AIQ'
+                      ? 'bg-white text-indigo-600 shadow-sm'
+                      : 'text-slate-500 hover:text-slate-700'
+                  }`}
+                >
+                  AIQ
+                </button>
+                <button
+                  onClick={() => setMode('Pharmacy')}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+                    mode === 'Pharmacy'
+                      ? 'bg-white text-indigo-600 shadow-sm'
+                      : 'text-slate-500 hover:text-slate-700'
+                  }`}
+                >
+                  Pharmacy
+                </button>
+              </div>
             </div>
           </div>
         </div>
-
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
