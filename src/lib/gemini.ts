@@ -3,9 +3,12 @@ import { GoogleGenAI } from "@google/genai";
 // --- Fallback Configuration ---
 // Models to cycle through sequentially on 429/503 errors.
 const FALLBACK_MODELS = [
+  "gemini-2.5-flash-lite",
   "gemini-3.1-flash-lite-preview",
   "gemini-2.5-flash",
   "gemini-3-flash-preview",
+  "gemini-2.5-pro",
+  "gemini-3.1-pro-preview",
 ];
 
 // API keys to cycle through sequentially. Empty/undefined keys are filtered out.
@@ -14,6 +17,8 @@ const API_KEYS = [
   process.env.GEMINI_API_KEY2,
   process.env.GEMINI_API_KEY3,
   process.env.GEMINI_API_KEY4,
+  process.env.GEMINI_API_KEY5,
+  process.env.GEMINI_API_KEY6,
 ].filter((key): key is string => !!key && key.trim().length > 0);
 
 /**
