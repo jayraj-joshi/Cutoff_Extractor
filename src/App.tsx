@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Upload, FileText, Copy, Download, Loader2, Check, AlertCircle, FolderUp, FileUp, X, CheckCircle2, XCircle, Clock, Sun, Moon } from 'lucide-react';
+import { Upload, FileText, Copy, Download, Loader2, Check, AlertCircle, FolderUp, FileUp, X, CheckCircle2, XCircle, Clock, Sun, Moon, Volume2, VolumeX } from 'lucide-react';
 import { extractData, ExtractionMode } from './lib/gemini';
 
 
@@ -51,6 +51,12 @@ export default function App() {
   const [textInput, setTextInput] = useState('');
   const [mode, setMode] = useState<ExtractionMode>('MHT-CET');
   const [minimal, setMinimal] = useState(false);
+  const [isMuted, setIsMuted] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('muted') === 'true';
+    }
+    return false;
+  });
   const [isDark, setIsDark] = useState(() => {
     if (typeof window !== 'undefined') {
       return document.documentElement.classList.contains('dark') || 
@@ -58,6 +64,10 @@ export default function App() {
     }
     return false;
   });
+
+  React.useEffect(() => {
+    localStorage.setItem('muted', isMuted.toString());
+  }, [isMuted]);
 
   React.useEffect(() => {
     if (isDark) {
@@ -68,6 +78,12 @@ export default function App() {
       localStorage.setItem('theme', 'light');
     }
   }, [isDark]);
+
+  const playNotification = () => {
+    if (isMuted) return;
+    const audio = new Audio('/success.opus');
+    audio.play().catch(e => console.error('Failed to play notification sound:', e));
+  };
   
   // Batch State
   const [batches, setBatches] = useState<Batch[]>(() => {
@@ -275,6 +291,8 @@ export default function App() {
 
       return { ...b, result: finalResult, error: finalError, isExtracting: false };
     }));
+
+    playNotification();
   };
 
   const handleCopy = () => {
@@ -351,6 +369,13 @@ export default function App() {
               title={isDark ? "Switch to light mode" : "Switch to dark mode"}
             >
               {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            </button>
+            <button
+              onClick={() => setIsMuted(!isMuted)}
+              className="p-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+              title={isMuted ? "Unmute notifications" : "Mute notifications"}
+            >
+              {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
             </button>
             <button
               onClick={handleGlobalDownload}
