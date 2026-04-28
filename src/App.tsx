@@ -209,7 +209,7 @@ export default function App() {
 
 
     // PDF Processing with Concurrency Limit
-    const concurrencyLimit = 5;
+    const concurrencyLimit = 10;
     const currentFiles = activeBatch?.files || [];
     let queueIndex = 0;
     

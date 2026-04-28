@@ -19,6 +19,9 @@ const API_KEYS = [
   process.env.GEMINI_API_KEY4,
   process.env.GEMINI_API_KEY5,
   process.env.GEMINI_API_KEY6,
+  process.env.GEMINI_API_KEY7,
+  process.env.GEMINI_API_KEY8,
+  process.env.GEMINI_API_KEY9,
 ].filter((key): key is string => !!key && key.trim().length > 0);
 
 /**
@@ -269,8 +272,12 @@ export async function extractData(input: { text?: string; pdfBase64?: string; mo
     const model = FALLBACK_MODELS[modelIndex];
     console.log(`[Gemini Fallback] Trying model: ${model} (${modelIndex + 1}/${FALLBACK_MODELS.length})`);
 
+    // Use a round-robin starting point for API keys to distribute load
+    const startKeyIndex = Math.floor(Math.random() * API_KEYS.length);
+
     // --- Inner loop: cycle through API keys for this model ---
-    for (let keyIndex = 0; keyIndex < API_KEYS.length; keyIndex++) {
+    for (let i = 0; i < API_KEYS.length; i++) {
+      const keyIndex = (startKeyIndex + i) % API_KEYS.length;
       const apiKey = API_KEYS[keyIndex];
       const ai = new GoogleGenAI({ apiKey });
 
